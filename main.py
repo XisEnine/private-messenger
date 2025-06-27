@@ -5,40 +5,72 @@ from googleapiclient.errors import HttpError
 import os
 import warnings
 
-# Suppress LibreSSL warning
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-SCOPES = ['https://www.googleapis.com/auth/documents.readonly']
-DOCUMENT_ID = '10uZW0QdZlqzhFXynH2bzFFEq48vF-YhDmRPGTfl6lP8'  # Replace with your doc ID
+
+SCOPES = ['https://www.googleapis.com/auth/documents']
+DOCUMENT_ID = '10uZW0QdZlqzhFXynH2bzFFEq48vF-YhDmRPGTfl6lP8'
+
+def read_document(service):
+    try:
+        doc = service.documents().get(documentId=DOCUMENT_ID).execute()
+        print(f"\nTitle: {doc.get('title')}\n")
+        print("Content:\n")
+
+        for element in doc.get('body').get('content', []):
+            if 'paragraph' in element:
+                for item in element['paragraph']['elements']:
+                    text = item.get('textRun')
+                    if text:
+                        print(text.get('content'), end='')
+        print()
+
+    except HttpError as err:
+        print(f"Error: {err}")
+
+def write_to_document(service, text):
+    try:
+        requests = [
+            {
+                'insertText': {
+                    'endOfSegmentLocation': {},
+                    'text': text + '\n'
+                }
+            }
+        ]
+        service.documents().batchUpdate(documentId=DOCUMENT_ID, body={'requests': requests}).execute()
+        print("Text added to the document.")
+
+    except HttpError as err:
+        print(f"Error writing to document: {err}")
+
 
 def main():
     creds = None
+
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     if not creds or not creds.valid:
         flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
         creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token_file:
-            token_file.write(creds.to_json())
-    try:
-        service = build('docs', 'v1', credentials=creds)
-        document = service.documents().get(documentId=DOCUMENT_ID).execute()
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
 
-        print(f"Title: {document.get('title')}")
-        print("\nContent:\n")
+    service = build('docs', 'v1', credentials=creds)
 
-        for element in document.get('body').get('content', []):
-            if 'paragraph' in element:
-                for elem in element['paragraph']['elements']:
-                    text_run = elem.get('textRun')
-                    if text_run:
-                        print(text_run.get('content'), end='')
-    except HttpError as error:
-        print(f"An error occurred: {error}")
-        print("\nMake sure you've:")
-        print("1. Enabled Google Docs API at https://console.developers.google.com/apis/api/docs.googleapis.com")
-        print("2. Waited a few minutes after enabling")
-        print("3. Used the correct document ID")
+    while True:
+        choice = input("\nType 1 to read, 2 to write, 0 to exit: ").strip()
+
+        if choice == '1':
+            read_document(service)
+        elif choice == '2':
+            user_text = input("What do you want to write into the document? ")
+            write_to_document(service, user_text)
+        elif choice == '0':
+            print("Exiting...")
+            break
+        else:
+            print("Invalid input. Please type 1, 2, or 0.")
 
 if __name__ == '__main__':
     main()
