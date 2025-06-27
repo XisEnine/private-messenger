@@ -1,121 +1,76 @@
+# Google Docs API Reader & Writer
 
-# Google Docs API Reader
+## 📄 Project Overview
 
-## Project Overview
-A Python script that connects to the Google Docs API to fetch and display the content of a specified Google Document.
+A Python script that connects to the **Google Docs API** to **read from and write to** a specified Google Document using OAuth 2.0 authentication.
 
-## Features
-- Authenticates with Google's OAuth 2.0
-- Reads document metadata (title)
-- Extracts and displays document content
-- Handles authentication tokens securely
-- Provides clear error messages for common issues
+## 🚀 Features
 
-## File Structure
+* ✅ Authenticates securely using OAuth 2.0
+* 📖 Reads and displays document metadata (title) and content
+* ✍️ Allows you to append custom text at the end of the document
+* 🔄 Interactive CLI to choose between reading, writing, or exiting
+* ⚠️ Handles and explains common authentication and API errors
+
+## 🗂️ File Structure
+
 ```
 .
-├── main.py                 # Main script
-├── credentials.json        # Google API credentials
-├── token.json              # Generated auth token
+├── main.py                 # Main script with read/write logic
+├── credentials.json        # OAuth 2.0 client credentials
+├── token.json              # Generated user access token
 ├── README.md               # Project documentation
-├── pyproject.toml          # Python project config
-└── uv.lock                 # Dependency lock file
+├── pyproject.toml          # Python project config (optional)
+└── uv.lock                 # Dependency lock file (optional)
 ```
 
-## Code Implementation
+## ⚙️ Setup Instructions
 
-```python
-"""
-Google Docs API Reader
-Authenticates and retrieves content from a specified Google Doc.
-"""
+### 1. Prerequisites
 
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-import os
-import warnings
+* Python 3.7 or higher
+* A Google Cloud project with the **Docs API enabled**
+* OAuth 2.0 credentials (`credentials.json`)
+* OAuth consent screen configured for your account
 
-# Suppress LibreSSL warning
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+### 2. Install Required Libraries
 
-# API Configuration
-SCOPES = ['https://www.googleapis.com/auth/documents.readonly']
-DOCUMENT_ID = '10uZW0QdZlqzhFXynH2bzFFEq48vF-YhDmRPGTfl6lP8'  # Replace with your doc ID
-
-def authenticate_user():
-    """Handles OAuth 2.0 authentication flow"""
-    creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    
-    if not creds or not creds.valid:
-        flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-        creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token_file:
-            token_file.write(creds.to_json())
-    return creds
-
-def fetch_document_content(service):
-    """Retrieves and displays document content"""
-    document = service.documents().get(documentId=DOCUMENT_ID).execute()
-    
-    print(f"Title: {document.get('title')}")
-    print("\nContent:\n")
-    
-    for element in document.get('body').get('content', []):
-        if 'paragraph' in element:
-            for elem in element['paragraph']['elements']:
-                text_run = elem.get('textRun')
-                if text_run:
-                    print(text_run.get('content'), end='')
-
-def main():
-    try:
-        creds = authenticate_user()
-        service = build('docs', 'v1', credentials=creds)
-        fetch_document_content(service)
-        
-    except HttpError as error:
-        print(f"An error occurred: {error}")
-        print("\nTroubleshooting:")
-        print("1. Enable Google Docs API at https://console.developers.google.com/apis/api/docs.googleapis.com")
-        print("2. Wait a few minutes after enabling")
-        print("3. Verify the document ID is correct")
-
-if __name__ == '__main__':
-    main()
+```bash
+pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 ```
 
-## Setup Instructions
+### 3. Configuration
 
-1. **Prerequisites**
-   - Python 3.7+
-   - Google Cloud Project with Docs API enabled
-   - OAuth consent screen configured
+* Place your `credentials.json` file in the project folder
+* Update the `DOCUMENT_ID` variable with your Google Doc ID
 
-2. **Installation**
-   ```bash
-   pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
-   ```
+---
 
-3. **Configuration**
-   - Place your `credentials.json` file in the project root
-   - Update `DOCUMENT_ID` with your target document ID
+## 🧪 Usage
 
-## Usage
 ```bash
 python main.py
 ```
 
-## Error Handling
-The script provides clear troubleshooting guidance for:
-- API not enabled
-- Invalid document ID
-- Authentication failures
-- Permission issues
+* Type `1` to **read** the document
+* Type `2` to **append text** to the end
+* Type `0` to **exit**
 
-## Security Notes
-- `credentials.json` should be kept confidential
-- `token.json` is automatically generated but contains sensitive data
+---
+
+## 🛠 Error Handling
+
+Covers and explains:
+
+* Token/authentication issues
+* Invalid document IDs
+* Missing or unenabled APIs
+* Permission or sharing restrictions
+
+---
+
+## 🔐 Security Notes
+
+* Keep `credentials.json` safe and **never commit it to version control**
+* `token.json` contains user-specific tokens; treat it as sensitive data
+
